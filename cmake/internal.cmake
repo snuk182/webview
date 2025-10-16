@@ -313,7 +313,7 @@ macro(webview_install_targets)
 endmacro()
 
 macro(webview_internal_options)
-    if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    if((CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR) AND NOT DEFINED WEBVIEW_IS_TOP_LEVEL_BUILD)
         set(WEBVIEW_IS_TOP_LEVEL_BUILD TRUE)
     endif()
 
