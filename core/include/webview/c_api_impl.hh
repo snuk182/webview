@@ -93,7 +93,21 @@ WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
   webview::webview *w{};
   auto err = api_filter(
       [=]() -> webview::result<webview::webview *> {
-        return new webview::webview{static_cast<bool>(debug), wnd};
+        return new webview::webview{static_cast<bool>(debug), true, wnd};
+      },
+      [&](webview::webview *w_) { w = w_; });
+  if (err == WEBVIEW_ERROR_OK) {
+    return w;
+  }
+  return nullptr;
+}
+
+WEBVIEW_API webview_t webview_create_control(int debug) {
+  using namespace webview::detail;
+  webview::webview *w{};
+  auto err = api_filter(
+      [=]() -> webview::result<webview::webview *> {
+        return new webview::webview{static_cast<bool>(debug), false, nullptr};
       },
       [&](webview::webview *w_) { w = w_; });
   if (err == WEBVIEW_ERROR_OK) {

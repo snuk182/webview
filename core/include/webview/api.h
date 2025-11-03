@@ -60,6 +60,24 @@ extern "C" {
 WEBVIEW_API webview_t webview_create(int debug, void *window);
 
 /**
+ * Creates a new unattached webview control instance.
+ *
+ * @param debug Enable developer tools if supported by the backend.
+ * @remark Win32: The function also accepts a pointer to @c HWND (Win32) in the
+ *         window parameter for backward compatibility.
+ * @remark Win32/WebView2: @c CoInitializeEx should be called with
+ *         @c COINIT_APARTMENTTHREADED before attempting to call this function
+ *         with an existing window. Omitting this step may cause WebView2
+ *         initialization to fail.
+ * @return @c NULL on failure. Creation can fail for various reasons such
+ *         as when required runtime dependencies are missing or when window
+ *         creation fails.
+ * @retval WEBVIEW_ERROR_MISSING_DEPENDENCY
+ *         May be returned if WebView2 is unavailable on Windows.
+ */
+WEBVIEW_API webview_t webview_create_control(int debug);
+
+/**
  * Destroys a webview instance and closes the native window.
  *
  * @param w The webview instance.

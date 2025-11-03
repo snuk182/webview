@@ -311,11 +311,12 @@ private:
 
 class win32_edge_engine : public engine_base {
 public:
-  win32_edge_engine(bool debug, void *window) : engine_base{!window} {
+  win32_edge_engine(bool debug, bool expect_window, void *window) : engine_base{expect_window && !window} {
     window_init(window);
     window_settings(debug);
     dispatch_size_default();
   }
+  win32_edge_engine(bool debug, void *window) : win32_edge_engine{debug, true, window} {}
 
   virtual ~win32_edge_engine() {
     if (m_com_handler) {
@@ -381,10 +382,10 @@ protected:
     return {};
   }
   result<void *> window_impl() override {
-    if (m_window) {
-      return m_window;
+    if (owns_window() && !m_window) {
+      return error_info{WEBVIEW_ERROR_INVALID_STATE};
     }
-    return error_info{WEBVIEW_ERROR_INVALID_STATE};
+    return m_window;
   }
   result<void *> widget_impl() override {
     if (m_widget) {
@@ -408,35 +409,39 @@ protected:
   }
 
   noresult set_title_impl(const std::string &title) override {
-    SetWindowTextW(m_window, widen_string(title).c_str());
+    if (m_window) {
+      SetWindowTextW(m_window, widen_string(title).c_str());
+    }
     return {};
   }
 
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
-    auto style = GetWindowLong(m_window, GWL_STYLE);
-    if (hints == WEBVIEW_HINT_FIXED) {
-      style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
-    } else {
-      style |= (WS_THICKFRAME | WS_MAXIMIZEBOX);
-    }
-    SetWindowLong(m_window, GWL_STYLE, style);
+    if (m_window) {
+      auto style = GetWindowLong(m_window, GWL_STYLE);
+      if (hints == WEBVIEW_HINT_FIXED) {
+        style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+      } else {
+        style |= (WS_THICKFRAME | WS_MAXIMIZEBOX);
+      }
+      SetWindowLong(m_window, GWL_STYLE, style);
 
-    if (hints == WEBVIEW_HINT_MAX) {
-      m_maxsz.x = width;
-      m_maxsz.y = height;
-    } else if (hints == WEBVIEW_HINT_MIN) {
-      m_minsz.x = width;
-      m_minsz.y = height;
-    } else {
-      auto dpi = get_window_dpi(m_window);
-      m_dpi = dpi;
-      auto scaled_size =
-          scale_size(width, height, get_default_window_dpi(), dpi);
-      auto frame_size =
-          make_window_frame_size(m_window, scaled_size.cx, scaled_size.cy, dpi);
-      SetWindowPos(m_window, nullptr, 0, 0, frame_size.cx, frame_size.cy,
-                   SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE |
-                       SWP_FRAMECHANGED);
+      if (hints == WEBVIEW_HINT_MAX) {
+        m_maxsz.x = width;
+        m_maxsz.y = height;
+      } else if (hints == WEBVIEW_HINT_MIN) {
+        m_minsz.x = width;
+        m_minsz.y = height;
+      } else {
+        auto dpi = get_window_dpi(m_window);
+        m_dpi = dpi;
+        auto scaled_size =
+            scale_size(width, height, get_default_window_dpi(), dpi);
+        auto frame_size =
+            make_window_frame_size(m_window, scaled_size.cx, scaled_size.cy, dpi);
+        SetWindowPos(m_window, nullptr, 0, 0, frame_size.cx, frame_size.cy,
+                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE |
+                        SWP_FRAMECHANGED);
+      }
     }
     return window_show();
   }
@@ -613,7 +618,7 @@ private:
       on_window_created();
 
       m_dpi = get_window_dpi(m_window);
-    } else {
+    } else if (window) {
       m_window = IsWindow(static_cast<HWND>(window))
                      ? static_cast<HWND>(window)
                      : *(static_cast<HWND *>(window));

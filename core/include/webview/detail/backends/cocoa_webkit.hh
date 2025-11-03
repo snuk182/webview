@@ -88,12 +88,14 @@ using namespace webkit;
 
 class cocoa_wkwebview_engine : public engine_base {
 public:
-  cocoa_wkwebview_engine(bool debug, void *window)
-      : engine_base{!window}, m_app{NSApplication_get_sharedApplication()} {
+  cocoa_wkwebview_engine(bool debug, bool expect_window, void *window)
+      : engine_base{expect_window && !window}, m_app{NSApplication_get_sharedApplication()} {
     window_init(window);
     window_settings(debug);
     dispatch_size_default();
   }
+  cocoa_wkwebview_engine(bool debug, void *window)
+      : cocoa_wkwebview_engine{debug, true, window} {}
 
   cocoa_wkwebview_engine(const cocoa_wkwebview_engine &) = delete;
   cocoa_wkwebview_engine &operator=(const cocoa_wkwebview_engine &) = delete;
@@ -147,10 +149,10 @@ public:
 
 protected:
   result<void *> window_impl() override {
-    if (m_window) {
-      return m_window;
+    if (!m_window && owns_window()) {
+      return error_info{WEBVIEW_ERROR_INVALID_STATE};
     }
-    return error_info{WEBVIEW_ERROR_INVALID_STATE};
+    return m_window;
   }
 
   result<void *> widget_impl() override {
@@ -188,33 +190,36 @@ protected:
   }
 
   noresult set_title_impl(const std::string &title) override {
-    NSWindow_set_title(m_window, title);
+    if (m_window) {
+      NSWindow_set_title(m_window, title);
+    }
     return {};
   }
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
-    objc::autoreleasepool arp;
+    if (m_window) {
+      objc::autoreleasepool arp;
 
-    auto style = static_cast<NSWindowStyleMask>(
-        NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-        NSWindowStyleMaskMiniaturizable);
-    if (hints != WEBVIEW_HINT_FIXED) {
-      style =
-          static_cast<NSWindowStyleMask>(style | NSWindowStyleMaskResizable);
+      auto style = static_cast<NSWindowStyleMask>(
+          NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+          NSWindowStyleMaskMiniaturizable);
+      if (hints != WEBVIEW_HINT_FIXED) {
+        style =
+            static_cast<NSWindowStyleMask>(style | NSWindowStyleMaskResizable);
+      }
+      NSWindow_set_styleMask(m_window, style);
+
+      if (hints == WEBVIEW_HINT_MIN) {
+        NSWindow_set_contentMinSize(m_window, NSSizeMake(width, height));
+      } else if (hints == WEBVIEW_HINT_MAX) {
+        NSWindow_set_contentMaxSize(m_window, NSSizeMake(width, height));
+      } else {
+        auto rect{NSWindow_get_frame(m_window)};
+        NSWindow_setFrame(m_window,
+                          NSRectMake(rect.origin.x, rect.origin.y, width, height),
+                          true, false);
+      }
+      NSWindow_center(m_window);
     }
-    NSWindow_set_styleMask(m_window, style);
-
-    if (hints == WEBVIEW_HINT_MIN) {
-      NSWindow_set_contentMinSize(m_window, NSSizeMake(width, height));
-    } else if (hints == WEBVIEW_HINT_MAX) {
-      NSWindow_set_contentMaxSize(m_window, NSSizeMake(width, height));
-    } else {
-      auto rect{NSWindow_get_frame(m_window)};
-      NSWindow_setFrame(m_window,
-                        NSRectMake(rect.origin.x, rect.origin.y, width, height),
-                        true, false);
-    }
-    NSWindow_center(m_window);
-
     return window_show();
   }
   noresult navigate_impl(const std::string &url) override {
@@ -513,9 +518,11 @@ private:
   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
 }");
     set_up_widget();
-    NSWindow_set_contentView(m_window, m_widget);
-    if (owns_window()) {
-      NSWindow_makeKeyAndOrderFront(m_window);
+    if (m_window) {
+      NSWindow_set_contentView(m_window, m_widget);
+      if (owns_window()) {
+        NSWindow_makeKeyAndOrderFront(m_window);
+      }
     }
   }
   void set_up_widget() {

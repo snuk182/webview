@@ -95,11 +95,12 @@
         m_callback(data.toStdString());
     }
  public:
-   qt_web_engine(bool debug, void *window) : engine_base{!window} {
+   qt_web_engine(bool debug, bool expect_window, void *window) : engine_base{expect_window && !window} {
      window_init(window);
      window_settings(debug);
      dispatch_size_default();
    }
+   qt_web_engine(bool debug, void *window) : qt_web_engine{debug, true, window} {}
  
    qt_web_engine(const qt_web_engine &) = delete;
    qt_web_engine &operator=(const qt_web_engine &) = delete;
@@ -119,10 +120,10 @@
  
  protected:
    result<void *> window_impl() override {
-     if (m_window) {
-       return m_window;
+     if (owns_window() && !m_window) {
+       return error_info{WEBVIEW_ERROR_INVALID_STATE};
      }
-     return error_info{WEBVIEW_ERROR_INVALID_STATE};
+     return m_window;
    }
  
    result<void *> widget_impl() override {
@@ -170,19 +171,23 @@
    }
  
    noresult set_title_impl(const std::string &title) override {
-     m_window->setWindowTitle(QString::fromStdString(title));
+      if (m_window) {
+        m_window->setWindowTitle(QString::fromStdString(title));
+      }
      return {};
    }
  
    noresult set_size_impl(int width, int height, webview_hint_t hints) override {
-     if (hints == WEBVIEW_HINT_NONE || hints == WEBVIEW_HINT_FIXED) {
-       qt_compat::window_set_size(m_window, width, height);
-     } else if (hints == WEBVIEW_HINT_MIN) {
-       m_window->setMinimumSize(width, height);
-     } else if (hints == WEBVIEW_HINT_MAX) {
-       qt_compat::window_set_max_size(m_window, width, height);
-     } else {
-       return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
+     if (m_window) {
+       if (hints == WEBVIEW_HINT_NONE || hints == WEBVIEW_HINT_FIXED) {
+         qt_compat::window_set_size(m_window, width, height);
+       } else if (hints == WEBVIEW_HINT_MIN) {
+         m_window->setMinimumSize(width, height);
+       } else if (hints == WEBVIEW_HINT_MAX) {
+         qt_compat::window_set_max_size(m_window, width, height);
+       } else {
+         return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
+       }
      }
      return window_show();
    }
@@ -296,15 +301,17 @@ function(message) {
      if (m_is_window_shown) {
        return {};
      }
-     qt_compat::window_set_child(m_window, m_webview);
-     qt_compat::widget_set_visible(m_webview, true);
- 
-     if (owns_window()) {
-       m_window->show();
-       m_webview->setFocus();
+     if (m_window) {
+       qt_compat::window_set_child(m_window, m_webview);
        qt_compat::widget_set_visible(m_webview, true);
+   
+       if (owns_window()) {
+         m_window->show();
+         m_webview->setFocus();
+         qt_compat::widget_set_visible(m_webview, true);
+       }
+       m_is_window_shown = true; 
      }
-     m_is_window_shown = true;
      return {};
    }
  

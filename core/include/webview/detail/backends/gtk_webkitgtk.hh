@@ -99,11 +99,12 @@ private:
 
 class gtk_webkit_engine : public engine_base {
 public:
-  gtk_webkit_engine(bool debug, void *window) : engine_base{!window} {
+  gtk_webkit_engine(bool debug, bool expect_window, void *window) : engine_base{expect_window && !window} {
     window_init(window);
     window_settings(debug);
     dispatch_size_default();
   }
+  gtk_webkit_engine(bool debug, void *window) : gtk_webkit_engine{debug, true, window} {}
 
   gtk_webkit_engine(const gtk_webkit_engine &) = delete;
   gtk_webkit_engine &operator=(const gtk_webkit_engine &) = delete;
@@ -133,10 +134,10 @@ public:
 
 protected:
   result<void *> window_impl() override {
-    if (m_window) {
-      return m_window;
+    if (!m_window && owns_window()) {
+      return error_info{WEBVIEW_ERROR_INVALID_STATE};
     }
-    return error_info{WEBVIEW_ERROR_INVALID_STATE};
+    return m_window;
   }
 
   result<void *> widget_impl() override {
@@ -176,20 +177,24 @@ protected:
   }
 
   noresult set_title_impl(const std::string &title) override {
-    gtk_window_set_title(GTK_WINDOW(m_window), title.c_str());
+    if (m_window) {
+      gtk_window_set_title(GTK_WINDOW(m_window), title.c_str());
+    }
     return {};
   }
 
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
-    gtk_window_set_resizable(GTK_WINDOW(m_window), hints != WEBVIEW_HINT_FIXED);
-    if (hints == WEBVIEW_HINT_NONE || hints == WEBVIEW_HINT_FIXED) {
-      gtk_compat::window_set_size(GTK_WINDOW(m_window), width, height);
-    } else if (hints == WEBVIEW_HINT_MIN) {
-      gtk_widget_set_size_request(m_window, width, height);
-    } else if (hints == WEBVIEW_HINT_MAX) {
-      gtk_compat::window_set_max_size(GTK_WINDOW(m_window), width, height);
-    } else {
-      return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
+    if (m_window) {
+      gtk_window_set_resizable(GTK_WINDOW(m_window), hints != WEBVIEW_HINT_FIXED);
+      if (hints == WEBVIEW_HINT_NONE || hints == WEBVIEW_HINT_FIXED) {
+        gtk_compat::window_set_size(GTK_WINDOW(m_window), width, height);
+      } else if (hints == WEBVIEW_HINT_MIN) {
+        gtk_widget_set_size_request(m_window, width, height);
+      } else if (hints == WEBVIEW_HINT_MAX) {
+        gtk_compat::window_set_max_size(GTK_WINDOW(m_window), width, height);
+      } else {
+        return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
+      }
     }
     return window_show();
   }
@@ -320,14 +325,16 @@ private:
     if (m_is_window_shown) {
       return {};
     }
-    gtk_compat::window_set_child(GTK_WINDOW(m_window), GTK_WIDGET(m_webview));
-    gtk_compat::widget_set_visible(GTK_WIDGET(m_webview), true);
+    if (m_window) {
+      gtk_compat::window_set_child(GTK_WINDOW(m_window), GTK_WIDGET(m_webview));
+      gtk_compat::widget_set_visible(GTK_WIDGET(m_webview), true);
 
-    if (owns_window()) {
-      gtk_widget_grab_focus(GTK_WIDGET(m_webview));
-      gtk_compat::widget_set_visible(GTK_WIDGET(m_window), true);
+      if (owns_window()) {
+        gtk_widget_grab_focus(GTK_WIDGET(m_webview));
+        gtk_compat::widget_set_visible(GTK_WIDGET(m_window), true);
+      }
+      m_is_window_shown = true;
     }
-    m_is_window_shown = true;
     return {};
   }
 
