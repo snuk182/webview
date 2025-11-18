@@ -274,7 +274,47 @@ protected:
     auto *wk_second = second.get_impl().get_native();
     return wk_first == wk_second;
   }
-
+  result<char *> get_url_impl() override {
+    objc::autoreleasepool arp;
+    auto nsurl{WKWebView_get_URL(m_webview)};
+    if (!nsurl) {
+      return nullptr;
+    }
+    auto url_string{NSURL_get_absoluteString(nsurl)};
+    return NSString_get_UTF8String(url_string);
+  }
+  result<char *> get_title_impl() override {
+    objc::autoreleasepool arp;
+    auto title{WKWebView_get_title(m_webview)};
+    if (!title) {
+      return nullptr;
+    }
+    return NSString_get_UTF8String(title);
+  }
+  noresult go_back_impl() override {
+    objc::autoreleasepool arp;
+    if (WKWebView_canGoBack(m_webview)) {
+      WKWebView_goBack(m_webview);
+    }
+    return {};
+  }
+  noresult go_forward_impl() override {
+    objc::autoreleasepool arp;
+    if (WKWebView_canGoForward(m_webview)) {
+      WKWebView_goForward(m_webview);
+    }
+    return {};
+  }
+  noresult reload_impl() override {
+    objc::autoreleasepool arp;
+    WKWebView_reload(m_webview);
+    return {};
+  }
+  noresult stop_impl() override {
+    objc::autoreleasepool arp;
+    WKWebView_stopLoading(m_webview);
+    return {};
+  }
 private:
   id create_app_delegate() {
     objc::autoreleasepool arp;

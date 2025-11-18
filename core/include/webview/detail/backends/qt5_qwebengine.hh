@@ -66,6 +66,7 @@
  #include <QFile>
  #include <QIODevice>
  #include <QList>
+ #include <QWebEngineHistory>
  
  #include <fcntl.h>
  #include <sys/stat.h>
@@ -248,6 +249,45 @@
      return wk_first == wk_second;
    }
  
+   noresult go_back_impl() override {
+     if (m_webview->page()->history()->canGoBack()) {
+       m_webview->page()->history()->back();
+       return {};
+     }
+     return error_info{WEBVIEW_ERROR_INVALID_STATE, "Cannot go back"};
+   }
+    noresult go_forward_impl() override {
+      if (m_webview->page()->history()->canGoForward()) {
+        m_webview->page()->history()->forward();
+        return {};
+      }
+      return error_info{WEBVIEW_ERROR_INVALID_STATE, "Cannot go forward"};
+    }
+    noresult reload_impl() override {
+      m_webview->reload();
+      return {};
+    }
+    noresult stop_impl() override {
+      m_webview->stop();
+      return {};
+    }
+
+    result<char *> get_url_impl() override {
+      QUrl url = m_webview->url();
+      if (url.isValid()) {
+        return strdup(url.toString().toStdString().c_str());
+      }
+      return error_info{WEBVIEW_ERROR_INVALID_STATE, "No URL loaded"};
+    }
+
+    result<char *> get_title_impl() override {
+      QString title = m_webview->title();
+      if (!title.isEmpty()) {
+        return strdup(title.toStdString().c_str());
+      }
+      return error_info{WEBVIEW_ERROR_INVALID_STATE, "No title available"};
+    }
+
  private:
    QString qwebchannel_js() {
      QFile apiFile(":/qtwebchannel/qwebchannel.js");

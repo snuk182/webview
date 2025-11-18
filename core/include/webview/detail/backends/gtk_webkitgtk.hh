@@ -251,6 +251,42 @@ protected:
     return wk_first == wk_second;
   }
 
+  result<char *> get_url_impl() override {
+    const char *url = webkit_web_view_get_uri(WEBKIT_WEB_VIEW(m_webview));
+    if (url) {
+      return strdup(url);
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE, "No URL loaded"};
+  }
+  result<char *> get_title_impl() override {
+    const char *title = webkit_web_view_get_title(WEBKIT_WEB_VIEW(m_webview));
+    if (title) {
+      return strdup(title);
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE, "No title available"};
+  }
+  noresult go_back_impl() override {
+    if (webkit_web_view_can_go_back(WEBKIT_WEB_VIEW(m_webview))) {
+      webkit_web_view_go_back(WEBKIT_WEB_VIEW(m_webview));
+      return {};
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE, "Cannot go back"};
+  }
+  noresult go_forward_impl() override {
+    if (webkit_web_view_can_go_forward(WEBKIT_WEB_VIEW(m_webview))) {
+      webkit_web_view_go_forward(WEBKIT_WEB_VIEW(m_webview));
+      return {};
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE, "Cannot go forward"};
+  }
+  noresult reload_impl() override {
+    webkit_web_view_reload(WEBKIT_WEB_VIEW(m_webview));
+    return {};
+  }
+  noresult stop_impl() override {
+    webkit_web_view_stop_loading(WEBKIT_WEB_VIEW(m_webview));
+    return {};
+  }
 private:
 #if GTK_MAJOR_VERSION >= 4
   static char *get_string_from_js_result(JSCValue *r) {

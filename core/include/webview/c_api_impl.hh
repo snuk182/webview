@@ -268,5 +268,57 @@ WEBVIEW_API const webview_version_info_t *webview_version(void) {
   return &webview::detail::library_version_info;
 }
 
+WEBVIEW_API webview_error_t webview_go_back(webview_t w) {
+  using namespace webview::detail;
+  return api_filter([=] { return cast_to_webview(w)->go_back(); });
+}
+
+WEBVIEW_API webview_error_t webview_go_forward(webview_t w) {
+  using namespace webview::detail;
+  return api_filter([=] { return cast_to_webview(w)->go_forward(); }); 
+}
+
+WEBVIEW_API webview_error_t webview_reload(webview_t w) {
+  using namespace webview::detail;
+  return api_filter([=] { return cast_to_webview(w)->reload(); }); 
+}
+
+WEBVIEW_API webview_error_t webview_stop(webview_t w) {
+  using namespace webview::detail;
+  return api_filter([=] { return cast_to_webview(w)->stop(); }); 
+}
+
+WEBVIEW_API char *webview_get_title(webview_t w) {
+  using namespace webview::detail;
+  char *title = nullptr;
+  auto err = api_filter(
+      [=]() -> webview::result<char *> {
+        return cast_to_webview(w)->get_title();
+      },
+      [&](char *value) {
+        title = value;
+      });
+  if (err == WEBVIEW_ERROR_OK) {
+    return title;
+  }
+  return nullptr;
+}
+
+WEBVIEW_API char *webview_get_url(webview_t w) {
+  using namespace webview::detail;
+  char *url = nullptr;
+  auto err = api_filter(
+      [=]() -> webview::result<char *> {
+        return cast_to_webview(w)->get_url();
+      },
+      [&](char *value) {
+        url = value;
+      });
+  if (err == WEBVIEW_ERROR_OK) {
+    return url;
+  }
+  return nullptr;
+}
+
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_C_API_IMPL_HH

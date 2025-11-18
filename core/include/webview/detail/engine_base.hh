@@ -152,11 +152,38 @@ window.__webview__.onUnbind(" +
 
   noresult eval(const std::string &js) { return eval_impl(js); }
 
+  result<char *> get_url() {
+    return get_url_impl();
+  }
+
+  result<char *> get_title() {
+    return get_title_impl();
+  }
+
+  noresult go_back() {
+    return go_back_impl();
+  }
+  noresult go_forward() {
+    return go_forward_impl();
+  }
+  noresult reload() {
+    return reload_impl();
+  }
+  noresult stop() {
+    return stop_impl();
+  }
+
 protected:
   virtual noresult navigate_impl(const std::string &url) = 0;
   virtual result<void *> window_impl() = 0;
   virtual result<void *> widget_impl() = 0;
   virtual result<void *> browser_controller_impl() = 0;
+  virtual result<char *> get_url_impl() = 0;
+  virtual result<char *> get_title_impl() = 0;
+  virtual noresult go_back_impl() = 0;
+  virtual noresult go_forward_impl() = 0;
+  virtual noresult reload_impl() = 0;
+  virtual noresult stop_impl() = 0;
   virtual noresult run_impl() = 0;
   virtual noresult terminate_impl() = 0;
   virtual noresult dispatch_impl(std::function<void()> f) = 0;

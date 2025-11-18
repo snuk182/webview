@@ -511,6 +511,58 @@ protected:
     return first_id == second_id;
   }
 
+  result<char *> get_url_impl() override {
+    LPWSTR url{};
+    auto res = m_webview->get_Source(&url);
+    if (SUCCEEDED(res) && url) {
+      std::string narrow_url = narrow_string(url);
+      CoTaskMemFree(url);
+      return allocate_c_string(narrow_url);
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE};
+  }
+
+  result<char *> get_title_impl() override {
+    LPWSTR title{};
+    auto res = m_webview->get_DocumentTitle(&title);
+    if (SUCCEEDED(res) && title) {
+      std::string narrow_title = narrow_string(title);
+      CoTaskMemFree(title);
+      return allocate_c_string(narrow_title);
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE};
+  }
+
+  noresult go_back_impl() override {
+    BOOL canGoBack{};
+    auto res = m_webview->get_CanGoBack(&canGoBack);
+    if (SUCCEEDED(res) && canGoBack) {
+      m_webview->GoBack();
+      return {};
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE, "Cannot go back"};
+  }
+
+  noresult go_forward_impl() override {
+    BOOL canGoForward{};
+    auto res = m_webview->get_CanGoForward(&canGoForward);
+    if (SUCCEEDED(res) && canGoForward) {
+      m_webview->GoForward();
+      return {};
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE, "Cannot go forward"};
+  }
+
+  noresult reload_impl() override {
+    m_webview->Reload();
+    return {};
+  }
+
+  noresult stop_impl() override {
+    m_webview->Stop();
+    return {};
+  }
+
 private:
   void window_init(void *window) {
     if (!is_webview2_available()) {

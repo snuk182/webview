@@ -73,6 +73,38 @@ inline id WKWebView_get_URL(id self) {
   return objc::msg_send<id>(self, objc::selector("URL"));
 }
 
+inline void WKWebView_reload(id self) {
+  objc::msg_send<void>(self, objc::selector("reload"));
+}
+
+inline void WKWebView_stopLoading(id self) {
+  objc::msg_send<void>(self, objc::selector("stopLoading"));
+}
+
+inline bool WKWebView_canGoBack(id self) {
+  return objc::msg_send<BOOL>(self, objc::selector("canGoBack"));
+}
+
+inline void WKWebView_goBack(id self) {
+  objc::msg_send<void>(self, objc::selector("goBack"));
+}
+
+inline bool WKWebView_canGoForward(id self) {
+  return objc::msg_send<BOOL>(self, objc::selector("canGoForward"));
+}
+
+inline void WKWebView_goForward(id self) {
+  objc::msg_send<void>(self, objc::selector("goForward"));
+}
+
+inline id WKWebView_get_title(id self) {
+  return objc::msg_send<id>(self, objc::selector("title"));
+}
+
+inline id NSURL_get_absoluteString(id self) {
+  return objc::msg_send<id>(self, objc::selector("absoluteString"));
+}
+
 inline id WKWebView_loadRequest(id self, id request) {
   return objc::msg_send<id>(self, objc::selector("loadRequest:"), request);
 }

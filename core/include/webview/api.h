@@ -255,6 +255,24 @@ WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name);
 WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
                                            int status, const char *result);
 
+                                           // Go back
+WEBVIEW_API webview_error_t webview_go_back(webview_t w);
+
+// Go forward
+WEBVIEW_API webview_error_t webview_go_forward(webview_t w);
+
+// Reload page
+WEBVIEW_API webview_error_t webview_reload(webview_t w);
+
+// Stop loading page
+WEBVIEW_API webview_error_t webview_stop(webview_t w);
+
+// Get current page title
+WEBVIEW_API char *webview_get_title(webview_t w);
+
+// Get current page URL
+WEBVIEW_API char *webview_get_url(webview_t w);
+
 /**
  * Get the library's version information.
  *
