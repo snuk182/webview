@@ -160,7 +160,11 @@
    noresult dispatch_impl(std::function<void()> f) override {
      auto* func = new std::function<void()>(f);
      QTimer* timer = new QTimer();
-     timer->moveToThread(m_app->thread());
+     if (owns_window()) {
+       timer->moveToThread(m_app->thread());
+     } else {
+       timer->moveToThread(QCoreApplication::instance()->thread());
+     }
      timer->setSingleShot(true);
      QObject::connect(timer, &QTimer::timeout, [=]() {
         (*func)();
