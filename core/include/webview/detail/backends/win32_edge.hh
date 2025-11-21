@@ -517,7 +517,7 @@ protected:
     if (SUCCEEDED(res) && url) {
       std::string narrow_url = narrow_string(url);
       CoTaskMemFree(url);
-      return allocate_c_string(narrow_url);
+      return strdup(narrow_url.c_str());
     }
     return error_info{WEBVIEW_ERROR_INVALID_STATE};
   }
@@ -528,7 +528,7 @@ protected:
     if (SUCCEEDED(res) && title) {
       std::string narrow_title = narrow_string(title);
       CoTaskMemFree(title);
-      return allocate_c_string(narrow_title);
+      return strdup(narrow_title.c_str());
     }
     return error_info{WEBVIEW_ERROR_INVALID_STATE};
   }
