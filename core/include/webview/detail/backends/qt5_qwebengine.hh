@@ -196,20 +196,22 @@
    }
  
    noresult set_size_impl(int width, int height, webview_hint_t hints) override {
-     if (hints == WEBVIEW_HINT_FIXED) {
-       qt_compat::window_set_min_size(m_window, width, height);
-       qt_compat::window_set_max_size(m_window, width, height);
-       qt_compat::window_set_size(m_window, width, height);
-     } else if (hints == WEBVIEW_HINT_NONE) {
-       qt_compat::window_set_min_size(m_window, 0, 0);
-       qt_compat::window_set_max_size(m_window, QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
-       qt_compat::window_set_size(m_window, width, height);
-     } else if (hints == WEBVIEW_HINT_MIN) {
-       qt_compat::window_set_min_size(m_window, width, height);
-     } else if (hints == WEBVIEW_HINT_MAX) {
-       qt_compat::window_set_max_size(m_window, width, height);
-     } else {
-       return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
+     if (m_window) {
+       if (hints == WEBVIEW_HINT_FIXED) {
+         qt_compat::window_set_min_size(m_window, width, height);
+         qt_compat::window_set_max_size(m_window, width, height);
+         qt_compat::window_set_size(m_window, width, height);
+       } else if (hints == WEBVIEW_HINT_NONE) {
+         qt_compat::window_set_min_size(m_window, 0, 0);
+         qt_compat::window_set_max_size(m_window, QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+         qt_compat::window_set_size(m_window, width, height);
+       } else if (hints == WEBVIEW_HINT_MIN) {
+         qt_compat::window_set_min_size(m_window, width, height);
+       } else if (hints == WEBVIEW_HINT_MAX) {
+         qt_compat::window_set_max_size(m_window, width, height);
+       } else {
+         return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
+       }
      }
      return window_show();
    }
