@@ -73,6 +73,18 @@
  
  namespace webview {
  namespace detail {
+
+ class qt_web_engine_debug_page: public QWebEnginePage {
+     Q_OBJECT
+ protected:
+     void javaScriptConsoleMessage(JavaScriptConsoleMessageLevel level,
+                                   const QString &message,
+                                   int lineNumber,
+                                   const QString &sourceID) override {
+         Q_UNUSED(level);
+         qDebug() << "JS Console:" << message << "line:" << lineNumber << "source:" << sourceID;
+     }
+ };
  
  class user_script::impl {
  public:
@@ -93,12 +105,13 @@
    Q_OBJECT
  public slots:
     void post(const QString &event, const QString &data) {
+        Q_UNUSED(event);
         m_callback(data.toStdString());
     }
  public:
    qt_web_engine(bool debug, bool expect_window, void *window) : engine_base{expect_window && !window} {
-     window_init(window);
-     window_settings(debug);
+     window_init(window, debug);
+     window_settings();
      dispatch_size_default();
    }
    qt_web_engine(bool debug, void *window) : qt_web_engine{debug, true, window} {}
@@ -183,16 +196,20 @@
    }
  
    noresult set_size_impl(int width, int height, webview_hint_t hints) override {
-     if (m_window) {
-       if (hints == WEBVIEW_HINT_NONE || hints == WEBVIEW_HINT_FIXED) {
-         qt_compat::window_set_size(m_window, width, height);
-       } else if (hints == WEBVIEW_HINT_MIN) {
-         m_window->setMinimumSize(width, height);
-       } else if (hints == WEBVIEW_HINT_MAX) {
-         qt_compat::window_set_max_size(m_window, width, height);
-       } else {
-         return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
-       }
+     if (hints == WEBVIEW_HINT_FIXED) {
+       qt_compat::window_set_min_size(m_window, width, height);
+       qt_compat::window_set_max_size(m_window, width, height);
+       qt_compat::window_set_size(m_window, width, height);
+     } else if (hints == WEBVIEW_HINT_NONE) {
+       qt_compat::window_set_min_size(m_window, 0, 0);
+       qt_compat::window_set_max_size(m_window, QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+       qt_compat::window_set_size(m_window, width, height);
+     } else if (hints == WEBVIEW_HINT_MIN) {
+       qt_compat::window_set_min_size(m_window, width, height);
+     } else if (hints == WEBVIEW_HINT_MAX) {
+       qt_compat::window_set_max_size(m_window, width, height);
+     } else {
+       return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
      }
      return window_show();
    }
@@ -302,7 +319,7 @@
      return apiScript;
    }
 
-   void window_init(void *window) {
+   void window_init(void *window, bool debug) {
      m_window = static_cast<QMainWindow *>(window);
      if (owns_window()) {
        m_argc = 0;
@@ -318,6 +335,9 @@
      }
      // Initialize webview widget
      m_webview = new QWebEngineView();
+     if (debug) {
+       m_webview->setPage(new qt_web_engine_debug_page());
+     }
      m_callback = std::bind(&qt_web_engine::on_message, this, std::placeholders::_1);
      m_webchannel = new QWebChannel(m_webview->page());
      m_webchannel->registerObject("qtwebview", this);
@@ -337,8 +357,9 @@ function(message) {
      )DELIM");
    }
  
-   void window_settings(bool debug) {
+   void window_settings() {
      m_webview->settings()->setAttribute(QWebEngineSettings::JavascriptCanAccessClipboard, true);
+     m_webview->settings()->setAttribute(QWebEngineSettings::LocalContentCanAccessRemoteUrls, true);
    }
  
    noresult window_show() {
