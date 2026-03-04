@@ -22,63 +22,60 @@
  * SOFTWARE.
  */
 
- #ifndef WEBVIEW_PLATFORM_LINUX_QT_COMPAT_HH
- #define WEBVIEW_PLATFORM_LINUX_QT_COMPAT_HH
- 
- #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
- 
- #include "../../../../macros.h"
- 
- #if defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_QT)
- 
- #include <QObject>
- #include <QWidget>
- #include <QMainWindow>
- #include <QApplication>
- 
- namespace webview {
- namespace detail {
- 
- /**
+#ifndef WEBVIEW_PLATFORM_LINUX_QT_COMPAT_HH
+#define WEBVIEW_PLATFORM_LINUX_QT_COMPAT_HH
+
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
+#include "../../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_QT)
+
+#include <QApplication>
+#include <QMainWindow>
+#include <QObject>
+#include <QWidget>
+
+namespace webview {
+namespace detail {
+
+/**
   * Qt compatibility helper class.
   */
- class qt_compat {
- public:
-   static QMainWindow *window_new() {
-      return new QMainWindow();
-   }
- 
-   static void window_set_child(QMainWindow *window, QWidget *widget) {
-      window->setCentralWidget(widget);
-   }
- 
-   static void window_remove_child(QMainWindow *window, QWidget *widget) {
-      if (widget == window->centralWidget()) {
-        window->takeCentralWidget();
-      }
-   }
- 
-   static void widget_set_visible(QWidget *widget, bool visible) {
-      widget->setVisible(visible);
-   }
- 
-   static void window_set_size(QMainWindow *window, int width, int height) {
-      window->setFixedSize(width, height);
-   }
- 
-   static void window_set_max_size(QMainWindow *window, int width, int height) {
-      window->setMaximumSize(width, height);
-   }
+class qt_compat {
+public:
+  static QMainWindow *window_new() { return new QMainWindow(); }
 
-   static void window_set_min_size(QMainWindow *window, int width, int height) {
-      window->setMinimumSize(width, height);
-   }
- };
- 
- } // namespace detail
- } // namespace webview
- 
- #endif // defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_QT)
- #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
- #endif // WEBVIEW_PLATFORM_LINUX_QT_COMPAT_HH
- 
+  static void window_set_child(QMainWindow *window, QWidget *widget) {
+    window->setCentralWidget(widget);
+  }
+
+  static void window_remove_child(QMainWindow *window, QWidget *widget) {
+    if (widget == window->centralWidget()) {
+      window->takeCentralWidget();
+    }
+  }
+
+  static void widget_set_visible(QWidget *widget, bool visible) {
+    widget->setVisible(visible);
+  }
+
+  static void window_set_size(QMainWindow *window, int width, int height) {
+    window->setFixedSize(width, height);
+  }
+
+  static void window_set_max_size(QMainWindow *window, int width, int height) {
+    window->setMaximumSize(width, height);
+  }
+
+  static void window_set_min_size(QMainWindow *window, int width, int height) {
+    window->setMinimumSize(width, height);
+  }
+};
+
+} // namespace detail
+} // namespace webview
+
+#endif // defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_QT)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WEBVIEW_PLATFORM_LINUX_QT_COMPAT_HH
